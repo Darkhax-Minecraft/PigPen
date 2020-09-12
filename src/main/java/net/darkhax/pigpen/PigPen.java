@@ -44,7 +44,8 @@ public class PigPen {
     public static final ResourceLocation FONT_DEFAULT = new ResourceLocation("minecraft", "default");
     
     public PigPen() {
-        
+    	
+    	System.out.println("done");
         MinecraftForge.EVENT_BUS.addListener(this::registerCommands);
     }
     
