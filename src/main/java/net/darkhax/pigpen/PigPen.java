@@ -45,7 +45,6 @@ public class PigPen {
     
     public PigPen() {
     	
-    	System.out.println("done");
         MinecraftForge.EVENT_BUS.addListener(this::registerCommands);
     }
     
