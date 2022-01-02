@@ -1,147 +1,135 @@
+// TODO remove buildscript block
 buildscript {
+
     repositories {
+
         mavenCentral()
     }
+
     dependencies {
-        classpath group: 'com.diluv.schoomp', name: 'Schoomp', version: '1.1.0'
+
+        classpath group: 'com.diluv.schoomp', name: 'Schoomp', version: '1.2.5'
     }
 }
 
-plugins {
-    id 'fabric-loom' version '0.5-SNAPSHOT'
-	id 'com.matthewprenger.cursegradle' version '1.4.0'
-    id 'maven-publish'
+apply from: 'gradle/property_loader.gradle'
+apply from: 'gradle/build_number.gradle'
+apply from: 'gradle/git_changelog.gradle'
+apply from: 'gradle/version_checker.gradle'
+
+subprojects {
+
+    apply plugin: 'maven-publish'
+
+    apply from: '../gradle/property_loader.gradle'
+    apply from: '../gradle/java.gradle'
+    apply from: '../gradle/build_number.gradle'
+    apply from: '../gradle/git_changelog.gradle'
+    apply from: '../gradle/minify_jsons.gradle'
+    apply from: '../gradle/signing.gradle'
+
+    // Disables Gradle's custom module metadata from being published to maven. The 
+    // metadata includes mapped dependencies which are not reasonably consumable by
+    // other mod developers.
+    tasks.withType(GenerateModuleMetadata) {
+
+        enabled = false
+    }
+
+    // Enable Mixins
+    project.ext.mixin_enabled = project.file("src/main/resources/${mod_id}.mixins.json").exists()
+    project.logger.lifecycle("Mixin ${project.ext.mixin_enabled ? 'enabled' : 'disabled'} for project ${project.name}.")
+
+    repositories {
+
+        mavenCentral()
+
+        maven {
+            name = 'Sponge / Mixin'
+            url = 'https://repo.spongepowered.org/repository/maven-public/'
+        }
+
+        maven {
+            name = 'BlameJared Maven (CrT / Bookshelf)'
+            url = 'https://maven.blamejared.com'
+        }
+
+        maven {
+            name = 'Mod Menu'
+            url = 'https://maven.terraformersmc.com/releases/'
+        }
+
+        maven {
+            name = 'Progwm16 / JEI'
+            url = 'https://dvs1.progwml6.com/files/maven'
+        }
+
+        maven {
+            name = 'Shedaniel / REI'
+            url = 'https://maven.shedaniel.me'
+        }
+
+        maven {
+            name = 'Curse Maven'
+            url = 'https://www.cursemaven.com'
+        }
+    }
 }
 
-apply from: 'https://raw.githubusercontent.com/MinecraftModDevelopment/Gradle-Collection/master/generic/secrets.gradle'
-apply from: 'https://raw.githubusercontent.com/MinecraftModDevelopment/Gradle-Collection/master/generic/markdown-git-changelog.gradle'
-apply from: 'https://raw.githubusercontent.com/MinecraftModDevelopment/Gradle-Collection/master/generic/patreon.gradle'
 
-import groovy.json.JsonSlurper
-import groovy.json.JsonOutput
 import com.diluv.schoomp.Webhook
 import com.diluv.schoomp.message.Message
 import com.diluv.schoomp.message.embed.Embed
-import com.diluv.schoomp.message.embed.Footer
 
-if (project.hasProperty('secretFile')) {
-    loadSecrets(new File((String) findProperty('secretFile')))
-}
+task postDiscord() {
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+    doLast {
+        try {
 
-archivesBaseName = "${project.mod_name}-fabric-${project.minecraft_version}"
-version = project.mod_version + ".${getBuildNumber()}"
+            // Create a new webhook instance for Discord
+            def webhook = new Webhook(findProperty('curse_discord_webhook'), "${project.ext.mod_name} CurseForge Gradle Upload")
 
-dependencies {
+            // Craft a message to send to Discord using the webhook.
+            def message = new Message()
+            message.setUsername("Mod Update: ${project.ext.mod_name}")
+            message.setContent("${project.ext.mod_name} ${project.version} for Minecraft ${project.ext.minecraft_version} has been published!")
 
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-}
+            def embed = new Embed();
+            def downloadSources = new StringJoiner('\n')
 
-processResources {
+            if (project(':Forge').hasProperty('curse_file_url')) {
 
-    inputs.property "version", project.version
+                downloadSources.add("<:forge:916233930091401266> [Forge](${project(':Forge').findProperty('curse_file_url')})")
+            }
 
-    from(sourceSets.main.resources.srcDirs) {
-        include "fabric.mod.json"
-        expand "version": project.version
-    }
+            if (project(':Fabric').hasProperty('curse_file_url')) {
 
-    from(sourceSets.main.resources.srcDirs) {
-        exclude "fabric.mod.json"
-    }
-}
+                downloadSources.add("<:fabric:916233929722314763> [Fabric](${project(':Fabric').findProperty('curse_file_url')})")
+            }
 
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
+            // Add Curseforge DL link if available.
+            def downloadString = downloadSources.toString()
 
+            if (downloadString && !downloadString.isEmpty()) {
 
-curseforge {
+                embed.addField('Download', downloadString, false)
+            }
 
-    apiKey = findProperty('curse_auth') ?: 0 
-    def versions = "${curse_versions}".split(', ')
+            // Add a changelog field if a changelog exists.
+            if (project.ext.mod_changelog && !project.ext.mod_changelog.isEmpty()) {
 
-    project {
+                embed.addField('Changelog', getChangelog(1500), false)
+            }
 
-        id = "${curse_project}"
-        releaseType = 'beta'
-        changelog = getGitChangelog() + "\n\nLike the mod? Consider following me on [Twitter](https://twitter.com/darkhaxdev) and joining the [Discord](https://discord.darkhax.net)\n\nHuge thanks to my supporters on [Patreon](https://www.patreon.com/Darkhax?MCChangelog?${mod_name})\n\n" + getPledgeLog()
-        changelogType = 'markdown'
-        addGameVersion "Fabric"
-        
-        versions.each {
+            embed.setColor(0xFF8000)
+            message.addEmbed(embed)
 
-            addGameVersion "${it}"
+            webhook.sendMessage(message)
         }
 
-        mainArtifact(file("${project.buildDir}/libs/${archivesBaseName}-${version}.jar"))
-        
-        afterEvaluate {
-            uploadTask.dependsOn(remapJar)
+        catch (IOException e) {
+
+            project.logger.error('Failed to push CF Discord webhook.')
         }
     }
-    
-    options {
-        forgeGradleIntegration = false;
-    }
-}
-
-tasks.getByName("curseforge").doLast {
-
-    try {
-    
-        // Reads the file ID given to us by CurseForge
-        def newFileId = tasks.getByName("curseforge${curse_project}").property('mainArtifact').fileID
-    
-        def webhook = new Webhook(findProperty('discordCFWebhook'), "${project.findProperty('mod_name')} Gradle Upload");
-        
-        def message = new Message();        
-        message.setUsername(findProperty('mod_name'));
-        message.setContent("${project.findProperty('mod_name')} ${version} (Fabric) for Minecraft ${findProperty('minecraft_version')} has been released! The download will be public soon.");
-        
-        def embed = new Embed();
-        embed.addField('Download', "${project.findProperty('curse_page')}/files/$newFileId", false);
-        embed.addField('Change Log', "${getGitChangelog() ?: 'Unavailable :('}", false);
-        embed.setColor(0xFF8000);           
-        message.addEmbed(embed);
-
-        webhook.sendMessage(message);
-    }
-    
-    catch (IOException e) {
-        println 'Failed to push to the Discord webhook.'
-    }
-}
-
-java {
-	withSourcesJar()
-}
-
-publishing {
-    publications {
-		mavenJava(MavenPublication) {
-			artifact(remapJar) {
-				builtBy remapJar
-			}
-			artifact(sourcesJar) {
-				builtBy remapSourcesJar
-			}
-		}
-	}
-    repositories {
-        maven {
-            // Sets the maven URL
-            url findProperty('localMaven')
-        }
-    }
-}
-
-String getBuildNumber() {
-
-    return System.getenv('BUILD_NUMBER') ? System.getenv('BUILD_NUMBER') : System.getenv('TRAVIS_BUILD_NUMBER') ? System.getenv('TRAVIS_BUILD_NUMBER') : '0';
 }
