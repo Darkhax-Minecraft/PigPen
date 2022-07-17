@@ -12,6 +12,6 @@ public class PigPenForge {
     @SubscribeEvent
     public static void registerCommands(RegisterCommandsEvent event) {
 
-        PigPenCommands.registerCommands(event.getDispatcher(), event.getEnvironment() == Commands.CommandSelection.DEDICATED);
+        PigPenCommands.registerCommands(event.getDispatcher(), event.getCommandSelection() == Commands.CommandSelection.DEDICATED);
     }
 }
