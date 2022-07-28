@@ -60,7 +60,7 @@ public class PigPenCommands {
         final Component inputMessage = applyFont(Component.translatable(StringArgumentType.getString(ctx, "text")), Constants.FONT_RUNELIC);
         final Component txtMessage = Component.translatable("chat.type.announcement", ctx.getSource().getDisplayName(), inputMessage);
         final Entity sender = ctx.getSource().getEntity();
-        ctx.getSource().getServer().getPlayerList().broadcastSystemMessage(txtMessage, ChatType.SYSTEM);
+        ctx.getSource().getServer().getPlayerList().broadcastSystemMessage(txtMessage, false);
         return 1;
     }
 
