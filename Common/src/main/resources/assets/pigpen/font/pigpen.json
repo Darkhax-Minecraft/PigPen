@@ -1,6 +1,12 @@
 {
     "providers": [
         {
+            "type": "space",
+            "advances": {
+                " ": 4
+            }
+        },
+        {
             "type": "bitmap",
             "file": "pigpen:font/ascii_pigpen.png",
             "ascent": 7,
