@@ -1,9 +1,0 @@
-{
-  "required": true,
-  "package": "net.darkhax.pigpen.mixin",
-  "compatibilityLevel": "JAVA_17",
-  "mixins": [
-    "AccessorSignBlockEntity"
-  ],
-  "minVersion": "0.8"
-}
