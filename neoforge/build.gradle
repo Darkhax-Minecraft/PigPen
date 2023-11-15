@@ -1,6 +1,5 @@
 plugins {
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
-    id 'org.spongepowered.mixin' version '0.7-SNAPSHOT'
+    id 'net.neoforged.gradle.userdev' version '7.0.43'
     id 'net.darkhax.curseforgegradle'
     id 'com.modrinth.minotaur'
 }
@@ -8,63 +7,42 @@ plugins {
 apply from: '../gradle/patreon.gradle'
 
 base {
-    archivesName = "${mod_name}-Forge-${minecraft_version}"
+    archivesName = "${mod_name}-NeoForge-${minecraft_version}"
 }
 
-minecraft {
+runs {
+    configureEach {
+        modSource project.sourceSets.main
+    }
+    client {
+        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+    }
+    server {
+        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        programArgument '--nogui'
+    }
 
-    mappings channel: 'official', version: minecraft_version
-
-    runs {
-        client {
-            workingDirectory project.file('run')
-            ideaModule "${rootProject.name}.${project.name}.main"
-            taskName 'Client'
-
-            if (project.ext.mixin_enabled) {
-                arg "-mixin.config=${mod_id}.mixins.json"
-            }
-
-            mods {
-                modClientRun {
-                    source sourceSets.main
-                    source project(':common').sourceSets.main
-                }
-            }
-        }
-
-        server {
-            workingDirectory project.file('run')
-            ideaModule "${rootProject.name}.${project.name}.main"
-            taskName 'Server'
-
-            if (project.ext.mixin_enabled) {
-                arg "-mixin.config=${mod_id}.mixins.json"
-            }
-
-            mods {
-                modServerRun {
-                    source sourceSets.main
-                    source project(':common').sourceSets.main
-                }
-            }
-        }
+    gameTestServer {
+        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
     }
 }
 
 dependencies {
-
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    implementation "net.neoforged:neoforge:${neoforge_version}"
+    implementation "net.darkhax.bookshelf:Bookshelf-NeoForge-${project.ext.minecraft_version}:${project.ext.bookshelf_version}"
     compileOnly project(':common')
-    implementation fg.deobf("net.darkhax.bookshelf:Bookshelf-Forge-${project.ext.minecraft_version}:${project.ext.bookshelf_version}")
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
-tasks.withType(JavaCompile).configureEach {
+// NeoGradle compiles the game, but we don't want to add our common code to the game's code
+TaskCollection.metaClass.excludingNeoTasks = { ->
+    delegate.matching { !it.name.startsWith("neo") }
+}
+
+tasks.withType(JavaCompile).excludingNeoTasks().configureEach {
     source(project(':common').sourceSets.main.allSource)
 }
 
-tasks.withType(Javadoc).configureEach {
+tasks.withType(Javadoc).excludingNeoTasks().configureEach {
     source(project(':common').sourceSets.main.allJava)
 }
 
@@ -72,10 +50,13 @@ tasks.named("sourcesJar", Jar) {
     from(project(':common').sourceSets.main.allSource)
 }
 
+tasks.withType(ProcessResources).excludingNeoTasks().configureEach {
+    from project(':common').sourceSets.main.resources
+}
 
 processResources {
 
-    from project(':common').sourceSets.main.resources
+    from project(":common").sourceSets.main.resources
 
     def buildProps = project.properties.clone()
 
@@ -100,42 +81,13 @@ processResources {
         buildProps.put('mod_supporters', supporters.join(', '))
     }
 
-    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+    filesMatching('*.mixins.json') {
+        filter(org.apache.tools.ant.filters.LineContains, negate: true, contains: ['refmap' ] )
+    }
+
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta', '*.mixins.json']) {
 
         expand buildProps
-    }
-
-    if (project.ext.mixin_enabled) {
-        filesMatching(["${mod_id}.mixins.json".toString()]) {
-
-            expand buildProps
-        }
-    }
-}
-
-jar.finalizedBy('reobfJar')
-
-jar {
-
-    manifest {
-
-        def newProps = [:]
-
-        if (project.ext.mixin_enabled) {
-            newProps['MixinConfigs'] = "${mod_id}.mixins.json"
-        }
-
-        attributes(newProps)
-    }
-}
-
-// -- Mixin Support
-if (project.ext.mixin_enabled) {
-
-    mixin {
-
-        // Tells the mixin plugin where to put the generated refmap file.
-        add sourceSets.main, "${mod_id}.refmap.json"
     }
 }
 
@@ -148,7 +100,6 @@ project.publishing {
 
             artifactId = base.archivesName.get()
             from components.java
-            fg.component(it)
         }
     }
 
@@ -181,9 +132,8 @@ task publishCurseForge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge)
     mainFile.changelogType = 'markdown'
     mainFile.changelog = project.ext.mod_changelog
     mainFile.addJavaVersion('Java 17')
-    mainFile.addRequirement('bookshelf')
     mainFile.releaseType = 'release'
-    mainFile.addGameVersion('Client', 'Server')
+    mainFile.addGameVersion('Server', 'Client')
 
     // Append Patreon Supporters
     def patreonInfo = project.findProperty('patreon')
@@ -214,7 +164,10 @@ modrinth {
     token.set(project.findProperty('modrinth_auth'))
     projectId.set(modrinth_project)
     changelog = changelog
-    versionName.set("${mod_name}-Forge-${minecraft_version}-$version")
+    versionName.set("${mod_name}-NeoForge-${minecraft_version}-$version")
     versionType.set('release')
     uploadFile.set(tasks.jar)
+
+    loaders = ["neoforge"]
+    gameVersions = ["${minecraft_version}"]
 }
