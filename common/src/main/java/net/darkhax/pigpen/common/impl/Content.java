@@ -24,7 +24,7 @@ public class Content implements ContentProvider {
 
     @Override
     public void defineTrades(VillagerTradeAdapter registry) {
-        final TradeConfig config = PigPenMod.CONFIG.get().banner_stencil_trade;
+        final TradeConfig config = PigPenMod.CONFIG.banner_stencil_trade;
         if (config.enabled) {
             registry.addWanderingTrade(new VillagerOffers(config.tradeOffer), config.is_rare);
         }
