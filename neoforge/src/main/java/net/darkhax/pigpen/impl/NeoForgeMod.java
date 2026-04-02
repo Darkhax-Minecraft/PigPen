@@ -5,4 +5,6 @@ import net.neoforged.fml.common.Mod;
 
 @Mod(PigPenMod.MOD_ID)
 public class NeoForgeMod {
+    public NeoForgeMod() {
+    }
 }
