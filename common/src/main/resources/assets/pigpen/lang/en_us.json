@@ -1,6 +1,5 @@
 {
-  "item.pigpen.pigpen_pattern": "Banner Pattern",
-  "item.pigpen.pigpen_pattern.desc": "Pigpen Cipher",
+  "item.pigpen.pigpen_pattern": "Pigpen Cipher Pattern",
   "block.pigpen.banner.a.black": "Black 'a' Pigpen",
   "block.pigpen.banner.a.blue": "Blue 'a' Pigpen",
   "block.pigpen.banner.a.brown": "Brown 'a' Pigpen",

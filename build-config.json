@@ -1,0 +1,41 @@
+{
+  "mod": {
+    "name": "PigPen",
+    "group": "net.darkhax.pigpen",
+    "authors": [
+      "Darkhax"
+    ],
+    "id": "pigpen",
+    "license": "LGPL V2.1",
+    "description": "The classic Pig Pen Cipher now in Minecraft!",
+    "repo": "https://github.com/Darkhax-Minecraft/PigPen",
+    "client": false
+  },
+  "curseforge": {
+    "slug": "pig-pen-cipher",
+    "id": "396234"
+  },
+  "modrinth": {
+    "slug": "pig-pen-cipher",
+    "id": "2xZPITh8"
+  },
+  "dependencies": [
+    {
+      "name": "Bookshelf",
+      "type": "required",
+      "maven": {
+        "common": "net.darkhax.bookshelf:bookshelf-common-26.1.2:26.1.2.3",
+        "neoforge": "net.darkhax.bookshelf:bookshelf-neoforge-26.1.2:26.1.2.3",
+        "fabric": "net.darkhax.bookshelf:bookshelf-fabric-26.1.2:26.1.2.3"
+      },
+      "curseforge": {
+        "slug": "bookshelf",
+        "id": "228525"
+      },
+      "modrinth": {
+        "slug": "bookshelf-lib",
+        "id": "uy4Cnpcm"
+      }
+    }
+  ]
+}
