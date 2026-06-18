@@ -4,9 +4,9 @@ issueTrackerURL = "https://github.com/Darkhax-Minecraft/PigPen/issues"
 
 [[mods]]
 modId = "pigpen"
-version = "26.1.2.0"
+version = "26.2.0.0"
 displayName = "PigPen"
-updateJSONURL = "https://updates.blamejared.com/get?n=pigpen&gv=26.1.2&ml=neoforge"
+updateJSONURL = "https://updates.blamejared.com/get?n=pigpen&gv=26.2&ml=neoforge"
 displayURL = "https://www.curseforge.com/minecraft/mc-mods/pig-pen-cipher"
 logoFile = "logo_pigpen.png"
 logoBlur = false
@@ -23,14 +23,14 @@ config = "pigpen.neoforge.mixins.json"
 [[dependencies.pigpen]]
 modId = "minecraft"
 type = "required"
-versionRange = "26.1"
+versionRange = "26.2"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.pigpen]]
 modId = "neoforge"
 type = "required"
-versionRange = "[26.1.0.1-beta,)"
+versionRange = "[26.2.0.1-beta,)"
 ordering = "NONE"
 side = "BOTH"
 
